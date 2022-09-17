@@ -1,5 +1,7 @@
 # Utilities in Rust
 
+* `wcat` (needs improvements to handle big files)
+
 ## Usage
 
 ``` shell
