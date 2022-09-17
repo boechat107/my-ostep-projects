@@ -5,7 +5,7 @@ My implementation of [OSTEP projects](https://github.com/remzi-arpacidusseau/ost
 ## Implementations
 
 * [ ] `initial-utilities`
-  * [X] `wcat`
+  * [X] `wcat` (C and Rust)
   * [ ] `wgrep`
   * [ ] `wzip` and `wunzip`
 
@@ -15,3 +15,8 @@ To compile C code:
 
 * `c99` (C compiler)
 * `make` (for Makefile)
+
+To compile Rust code:
+
+* `rustc`
+* `cargo`
