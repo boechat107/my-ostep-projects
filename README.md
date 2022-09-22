@@ -6,7 +6,7 @@ My implementation of [OSTEP projects](https://github.com/remzi-arpacidusseau/ost
 
 * [ ] `initial-utilities`
   * [X] `wcat` (C and Rust)
-  * [ ] `wgrep`
+  * [X] `wgrep` (C)
   * [ ] `wzip` and `wunzip`
 
 ## Requirements
@@ -14,6 +14,7 @@ My implementation of [OSTEP projects](https://github.com/remzi-arpacidusseau/ost
 To compile C code:
 
 * `c99` (C compiler)
+* `gcc` (C compiler)
 * `make` (for Makefile)
 
 To compile Rust code:
