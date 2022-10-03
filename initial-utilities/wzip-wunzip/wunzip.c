@@ -6,8 +6,12 @@
 
 
 unsigned long to_long(unsigned char *bytes, size_t size) {
-    return 0;
-
+    unsigned long retval = 0;
+    for (size_t i = 0; i < size; i++) {
+        retval <<= 8;
+        retval += bytes[i];
+    }
+    return retval;
 }
 
 
