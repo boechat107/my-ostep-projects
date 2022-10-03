@@ -5,9 +5,9 @@
 #define BUFFER_SIZE 10
 #define RLE_CNT_NBYTES 4
 
-void to_bytes(unsigned char bytes[RLE_CNT_NBYTES], unsigned long n) {
-    for (size_t i = 0; i < RLE_CNT_NBYTES; i++) {
-        bytes[RLE_CNT_NBYTES - (i + 1)] = (n >> (8 * i)) & 255;
+void to_bytes(unsigned char *bytes, size_t size, unsigned long n) {
+    for (size_t i = 0; i < size; i++) {
+        bytes[size - (i + 1)] = (n >> (8 * i)) & 255;
     }
 }
 
@@ -30,7 +30,7 @@ void encode_print_RLE(FILE *stream) {
                 // An alternative would be initializing by reading a single
                 // character first (worse for small files).
                 if (char_cnt > 0) {
-                    to_bytes(rle_cnt, char_cnt);
+                    to_bytes(rle_cnt, RLE_CNT_NBYTES, char_cnt);
                     rle_cnt[RLE_CNT_NBYTES] = last_char;
                     fwrite(rle_cnt, 1, 5, stdout);
                 }
