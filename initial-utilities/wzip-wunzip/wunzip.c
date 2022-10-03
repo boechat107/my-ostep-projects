@@ -1,9 +1,29 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void decode_print_RLE(FILE *stream) {
+#define RLE_CNT_NBYTES 4
+#define RLE_NBYTES RLE_CNT_NBYTES + 1
+
+
+unsigned long to_long(unsigned char *bytes, size_t size) {
+    return 0;
 
 }
+
+
+void decode_print_RLE(FILE *stream) {
+    unsigned char rle_entry[RLE_NBYTES] = {0};
+    size_t fread_ret = RLE_NBYTES;
+    unsigned long char_cnt = 0;
+
+    while((fread_ret = fread(rle_entry, 1, RLE_NBYTES, stream)) == RLE_NBYTES) {
+        char_cnt = to_long(rle_entry, RLE_CNT_NBYTES);
+        for (size_t i = 0; i < char_cnt; i++) {
+            printf("%c", rle_entry[RLE_CNT_NBYTES]);
+        }
+    }
+}
+
 
 int main(int argc, char *argv[argc+1]) {
     if (argc < 2) {
