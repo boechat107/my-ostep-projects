@@ -14,7 +14,7 @@ void to_bytes(unsigned char bytes[RLE_CNT_NBYTES], unsigned long n) {
 
 void encode_print_RLE(FILE *stream) {
     char buffer[BUFFER_SIZE] = {0};
-    unsigned char rle_cnt[RLE_CNT_NBYTES] = {0};
+    unsigned char rle_cnt[RLE_CNT_NBYTES + 1] = {0};
     char *fgets_ret = buffer;
     unsigned long char_cnt = 0;
     char last_char = 0;
@@ -22,20 +22,22 @@ void encode_print_RLE(FILE *stream) {
         for (size_t i = 0; i < BUFFER_SIZE; i++) {
             if (buffer[i] == last_char) {
                 char_cnt++;
+            } else if (buffer[i] == '\0') {
+                break;
             } else {
                 // We only need to check this because of the first character
                 // (worse for big files).
                 // An alternative would be initializing by reading a single
                 // character first (worse for small files).
                 if (char_cnt > 0) {
-                    // TODO: Convert and print
                     to_bytes(rle_cnt, char_cnt);
-                    // fwrite(, stdout);
+                    rle_cnt[RLE_CNT_NBYTES] = last_char;
+                    fwrite(rle_cnt, 1, 5, stdout);
                 }
                 last_char = buffer[i];
                 char_cnt = 1;
             }
-            if ((buffer[i] == '\0') || (buffer[i] == '\n'))
+            if (buffer[i] == '\n')
                 break;
         }
     }
