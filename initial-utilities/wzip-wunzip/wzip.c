@@ -4,6 +4,7 @@
 // Increase this number
 #define BUFFER_SIZE 10
 #define RLE_CNT_NBYTES 4
+#define RLE_NBYTES RLE_CNT_NBYTES + 1
 
 /**
    Converts the number "n" into an array of bytes.
@@ -31,7 +32,7 @@ void encode_print_RLE(FILE *stream) {
     // Reading buffer. We read files in parts.
     char buffer[BUFFER_SIZE] = {0};
     // The first RLE_CNT_NBYTES bytes to count repetitions. Used for printing.
-    unsigned char rle_cnt[RLE_CNT_NBYTES + 1] = {0};
+    unsigned char rle_cnt[RLE_NBYTES] = {0};
     // Used only to get the result of "fgets".
     char *fgets_ret = buffer;
     // The last character we counted. It changes when we find a new character.
@@ -59,7 +60,7 @@ void encode_print_RLE(FILE *stream) {
                     to_bytes(rle_cnt, RLE_CNT_NBYTES, char_cnt);
                     rle_cnt[RLE_CNT_NBYTES] = last_char;
                     // We write the entry to STDOUT in binary.
-                    fwrite(rle_cnt, 1, 5, stdout);
+                    fwrite(rle_cnt, 1, RLE_NBYTES, stdout);
                 }
                 last_char = buffer[i];
                 char_cnt = 1;
