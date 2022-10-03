@@ -1,4 +1,46 @@
+#include <stdio.h>
 #include <stdlib.h>
+
+// Increase this number
+#define BUFFER_SIZE 10
+#define RLE_CNT_NBYTES 4
+
+void to_bytes(unsigned char bytes[RLE_CNT_NBYTES], unsigned long n) {
+    for (size_t i = 0; i < RLE_CNT_NBYTES; i++) {
+        bytes[RLE_CNT_NBYTES - (i + 1)] = (n >> (8 * i)) & 255;
+    }
+}
+
+
+void encode_print_RLE(FILE *stream) {
+    char buffer[BUFFER_SIZE] = {0};
+    unsigned char rle_cnt[RLE_CNT_NBYTES] = {0};
+    char *fgets_ret = buffer;
+    unsigned long char_cnt = 0;
+    char last_char = 0;
+    while((fgets_ret = fgets(buffer, BUFFER_SIZE, stream))) {
+        for (size_t i = 0; i < BUFFER_SIZE; i++) {
+            if (buffer[i] == last_char) {
+                char_cnt++;
+            } else {
+                // We only need to check this because of the first character
+                // (worse for big files).
+                // An alternative would be initializing by reading a single
+                // character first (worse for small files).
+                if (char_cnt > 0) {
+                    // TODO: Convert and print
+                    to_bytes(rle_cnt, char_cnt);
+                    // fwrite(, stdout);
+                }
+                last_char = buffer[i];
+                char_cnt = 1;
+            }
+            if ((buffer[i] == '\0') || (buffer[i] == '\n'))
+                break;
+        }
+    }
+}
+
 
 int main(int argc, char *argv[argc+1]) {
     if (argc < 2) {
