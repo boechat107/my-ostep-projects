@@ -4,10 +4,10 @@ My implementation of [OSTEP projects](https://github.com/remzi-arpacidusseau/ost
 
 ## Implementations
 
-* [ ] `initial-utilities`
+* [X] `initial-utilities`
   * [X] `wcat` (C and Rust)
   * [X] `wgrep` (C and Rust)
-  * [ ] `wzip` and `wunzip`
+  * [X] `wzip` and `wunzip` (C)
 
 ## Requirements
 
