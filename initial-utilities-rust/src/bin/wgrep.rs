@@ -1,5 +1,6 @@
-use std::io::{stdin, BufRead, BufReader};
-use std::{env, fs, process};
+use initial_utilities_rust::open_as_bufreader;
+use std::io::{stdin, BufRead};
+use std::{env, process};
 
 /// Read one line each time and searches for matches with "word". Only lines
 /// containing "word" are printed to STDOUT.
@@ -15,20 +16,6 @@ where
             Ok(s) if s.contains(word) => println!("{}", s),
             _ => (),
         }
-    }
-}
-
-fn open_as_bufreader(
-    file_path: &String,
-) -> Result<BufReader<fs::File>, std::io::Error> {
-    let fp = fs::File::open(file_path);
-    // We don't use "expect" to mimic the C version of "wgrep".
-    match fp {
-        Err(x) => {
-            println!("wgrep: cannot open file");
-            Err(x)
-        }
-        Ok(x) => Ok(BufReader::new(x)),
     }
 }
 
@@ -49,7 +36,10 @@ fn main() -> process::ExitCode {
         // "word" and use the remaining arguments as file paths.
         for fpath in args.iter().skip(1) {
             match open_as_bufreader(fpath) {
-                Err(_) => return process::ExitCode::FAILURE,
+                Err(_) => {
+                    println!("wgrep: cannot open file");
+                    return process::ExitCode::FAILURE;
+                }
                 Ok(breader) => match_print(breader, word),
             }
         }

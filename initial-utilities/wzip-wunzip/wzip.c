@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// Increase this number
-#define BUFFER_SIZE 10
+#define BUFFER_SIZE 1000
 #define RLE_CNT_NBYTES 4
 #define RLE_NBYTES RLE_CNT_NBYTES + 1
 

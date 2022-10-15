@@ -7,7 +7,7 @@ My implementation of [OSTEP projects](https://github.com/remzi-arpacidusseau/ost
 * [X] `initial-utilities`
   * [X] `wcat` (C and Rust)
   * [X] `wgrep` (C and Rust)
-  * [X] `wzip` and `wunzip` (C)
+  * [X] `wzip` and `wunzip` (C and Rust)
 
 ## Requirements
 
