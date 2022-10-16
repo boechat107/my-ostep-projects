@@ -1,21 +1,27 @@
-use std::{env, fs, process};
+use initial_utilities_rust::do_in_chunks;
+use std::{env, io::stdout, io::Write, process};
+
+const BUFFER_SIZE: usize = 1000;
 
 fn main() -> process::ExitCode {
+    let mut std_out = stdout();
+    let mut buffer = [0 as u8; BUFFER_SIZE];
     // We skip the first argument because it is the name of the command-line
-    // program.
-    for cmd_arg in env::args().skip(1) {
-        // WARNING: this implementation puts the whole file in memory. The
-        // implementation in C handles better this situation by reading the
-        // file into chunks.
-        let read_res = fs::read_to_string(cmd_arg);
-        // We could have used something simpler like "expect()", but the
-        // results would be different of the C implementation.
-        match read_res {
+    // program. The remaining arguments should be file paths.
+    for filepath in env::args().skip(1) {
+        // We just print the contents of the buffer on STDOUT.
+        let printer = |nbytes, data_buffer: &[u8]| {
+            std_out
+                .write(&data_buffer[0..nbytes])
+                .expect("Failed to write to STDOUT");
+        };
+        // We read the input file in chunks.
+        match do_in_chunks(&filepath, &mut buffer, printer) {
             Err(_) => {
                 println!("wcat: cannot open file");
                 return process::ExitCode::FAILURE;
             }
-            Ok(file_content) => print!("{}", file_content),
+            _ => (),
         }
     }
     process::ExitCode::SUCCESS

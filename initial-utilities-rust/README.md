@@ -1,6 +1,6 @@
 # Utilities in Rust
 
-* `wcat` (needs improvements to handle big files)
+* `wcat`
 * `wgrep`
 * `wzip` and `wunzip`
 

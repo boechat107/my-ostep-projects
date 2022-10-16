@@ -1,5 +1,5 @@
-use initial_utilities_rust::open_as_bufreader;
-use std::io::{stdout, Read, Stdout, Write};
+use initial_utilities_rust::do_in_chunks;
+use std::io::{stdout, Stdout, Write};
 use std::{env, process::ExitCode};
 
 // We 4 bytes to store the RLE counter.
@@ -23,33 +23,38 @@ fn print_bytes(std_out: &mut Stdout, rle_bytes: &Vec<u8>) {
 }
 
 fn read_print_rle(filepath: &String) -> Result<(), std::io::Error> {
-    let mut breader = open_as_bufreader(filepath)?;
     let mut buffer = [0 as u8; BUFFER_SIZE];
     let mut char_cnt = 0 as RleCnt;
     let mut last_char = 0 as RleChar;
     let mut std_out = stdout();
-    // We keep reading chunks of bytes from the file.
-    while let Ok(nbytes) = breader.read(&mut buffer) {
+    // This closure mutates its captured values `char_cnt`, `last_char` and
+    // `std_out`. It is applied to each chunk of file data.
+    let printer = |nbytes, data_buffer: &[u8]| {
         for i in 0..nbytes {
-            if buffer[i] == last_char {
+            // If the current read byte is the same as the previous one, we
+            // keep counting.
+            if data_buffer[i] == last_char {
                 char_cnt += 1;
             } else {
+                // If the byte contents are different, we need to check if this
+                // is the first iteration of the algorithm (waste of CPU cycles
+                // for long files).
+                // After the first iteration, if they are different, we print
+                // the RLE entry (counter plus character) and reset the
+                // counter.
                 if char_cnt > 0 {
                     print_bytes(
                         &mut std_out,
                         &to_rle_bytes(last_char, char_cnt),
                     );
                 }
-                last_char = buffer[i];
+                last_char = data_buffer[i];
                 char_cnt = 1;
             }
         }
-        // We check if we reached the end of file.
-        if nbytes < BUFFER_SIZE {
-            break;
-        }
-    }
-    Ok(())
+    };
+    // We apply the closure in chunks of the input file.
+    do_in_chunks(filepath, &mut buffer, printer)
 }
 
 fn main() -> ExitCode {
