@@ -4,6 +4,12 @@
 * `wgrep`
 * `wzip` and `wunzip`
 
+The implementations use some interesting concepts:
+
+* Closures with mutable references
+* Passing functions as arguments to other functions
+* Abstraction to read files by chunks
+
 ## Usage
 
 ``` shell
