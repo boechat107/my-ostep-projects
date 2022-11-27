@@ -2,6 +2,7 @@
 #define MY_GETLINE
 
 #include <stdio.h>
+#include <sys/types.h>
 
 // Arbitrary number.
 #define MALLOC_SIZE 200
@@ -18,6 +19,6 @@
    read. In case of failure or nothing read because of EOF, the function
    returns -1.
 */
-int my_getline(char *[], FILE *);
+ssize_t my_getline(char *[], FILE *);
 
 #endif

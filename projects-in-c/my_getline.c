@@ -1,8 +1,9 @@
 #include "my_getline.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
 
-int my_getline(char *lineptr[], FILE *stream) {
+ssize_t my_getline(char *lineptr[], FILE *stream) {
     // Counts the number of memory allocations. Starts from 1 because we always
     // allocate at least once.
     size_t cnt_alloc = 1;
