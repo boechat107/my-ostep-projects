@@ -20,6 +20,11 @@ size_t _user_paths_len_ = 0;
 
 void print_error() { fprintf(stderr, "An error has occurred\n"); }
 
+void print_str_array(size_t len, char *str_array[]) {
+    for (size_t i = 0; i < len; i++)
+        printf("String %zu: %s\n", i, str_array[i]);
+}
+
 _Bool is_batch_mode(int argc) {
     if (argc == 2)
         return true;
@@ -49,11 +54,39 @@ char *my_strdup(char *str) {
 }
 
 /**
+   Concatenates strings to form a complete file path.
+
+   The function adds a "/" between "s1" and "s2" if necessary.
+*/
+char *concat_path_prog(char *s1, char *s2) {
+    size_t s1_len = strlen(s1);
+    size_t s1_req_extra = 0;
+    // We check if the base path contains an ending "/". If it doesn't contain,
+    // we need to count an extra character that we will add later.
+    if (s1[s1_len - 1] != '/')
+        s1_req_extra = 1;
+    size_t s2_len = strlen(s2);
+    size_t new_str_len = s1_len + s1_req_extra + s2_len;
+    // +1 to include the terminating null byte "\0".
+    char *new_str = malloc(sizeof(char) * (new_str_len + 1));
+    new_str[0] = '\0';
+    new_str = strcat(new_str, s1);
+    // If the last "s1" character is not "/", we need to add this extra
+    // character.
+    if (s1_req_extra > 0) {
+        new_str[s1_len] = '/';
+        new_str[s1_len + 1] = '\0';
+    }
+    new_str = strcat(new_str, s2);
+    return new_str;
+}
+
+/**
    Parses the command-line string and stores the tokens in "parsed_cmd",
    returning the number of parsed tokens.
 
    Note that the memory allocation for the parsed tokens happens inside the
-   function, and we need to free it later with "free_parsed_cmd".
+   function, and we need to free it later with "free_array_of_string".
 */
 size_t parse_cmd(char *cmd_input, char **parsed_cmd[]) {
     char *str_input, *token = NULL;
@@ -81,15 +114,14 @@ size_t parse_cmd(char *cmd_input, char **parsed_cmd[]) {
 }
 
 /**
-   Helper function to free the array strings used to store the parsed tokens of
-   commands.
+   Helper function to free the memory allocated for an array strings.
 */
-void free_parsed_cmd(size_t cmd_len, char **parsed_cmd[]){
+void free_array_of_string(size_t len, char **str_array[]){
     // The number of tokens is not the same as the size of the array.
-    if (*parsed_cmd != NULL) {
-        for (size_t i = 0; i < cmd_len; i++)
-            free((*parsed_cmd)[i]);
-        free(*parsed_cmd);
+    if (*str_array != NULL) {
+        for (size_t i = 0; i < len; i++)
+            free((*str_array)[i]);
+        free(*str_array);
     }
 }
 
@@ -101,10 +133,43 @@ _Bool equal_str(const char *s1, const char *s2) {
 }
 
 /**
+   Sets the user paths the shell uses to execute programs.
+
+   This function is the only place where "_user_paths_" and "_user_paths_len_"
+   are mutated.
+*/
+void set_user_paths(size_t n_paths, char *paths[]) {
+    // We need to free existing allocated memory before setting new paths.
+    if (_user_paths_len_ > 0) {
+        free_array_of_string(_user_paths_len_, &_user_paths_);
+        _user_paths_len_ = 0;
+    }
+    // The user can set an empty path and the shell would execute only built-in
+    // commands.
+    if (n_paths == 0) {
+        _user_paths_ = NULL;
+        _user_paths_len_ = 0;
+    } else {
+        _user_paths_len_ = n_paths;
+        // We copy the given paths to a new freshly allocated memory.
+        _user_paths_ = malloc(sizeof(char*) * n_paths);
+        for (size_t i = 0; i < n_paths; i++) {
+            _user_paths_[i] = my_strdup(paths[i]);
+        }
+    }
+}
+
+/**
    Executes built-in commands if one is given. If a built-in command is
    executed, returns true.
 */
 _Bool exec_builtin_cmds_or_ignore(size_t cmd_len, char *parsed_cmd[]) {
+    // Note:
+    // I don't like the need of adding a return statement for each built-in
+    // command. I do it here as a first simple approach.
+    // I believe that a better way would be to detect the built-in commands in
+    // the caller function. We could have an integer argument informing which
+    // one of the commands should be executed.
     // ======= exit =======
     if (equal_str(parsed_cmd[0], "exit")) {
         // This command doesn't accept any argument.
@@ -120,35 +185,20 @@ _Bool exec_builtin_cmds_or_ignore(size_t cmd_len, char *parsed_cmd[]) {
         if (!(cmd_len == 2))
             print_error();
         else {
-            printf("built-in command cd\n");
+            int is_ok = chdir(parsed_cmd[1]);
+            if (is_ok != 0)
+                print_error();
         }
         return true;
     }
     // ======= path =======
     else if (equal_str(parsed_cmd[0], "path")) {
-        printf("built-in command path\n");
+        set_user_paths(cmd_len - 1, parsed_cmd + 1);
+        // print_str_array(_user_paths_len_, _user_paths_);
         return true;
     }
     // If no built-in command is detected, nothing happens.
     return false;
-}
-
-/**
-   Sets the user paths the shell uses to execute programs.
-
-   This function is the only place where "_user_paths_" and "_user_paths_len_"
-   are mutated.
-*/
-void set_user_paths(size_t n_paths, char *paths[]) {
-    if (_user_paths_len_ > 0) {
-        free_parsed_cmd(_user_paths_len_, &_user_paths_);
-        _user_paths_len_ = 0;
-    }
-    _user_paths_ = malloc(sizeof(char*) * n_paths);
-    for (size_t i = 0; i < n_paths; i++) {
-        _user_paths_[i] = my_strdup(paths[0]);
-    }
-    _user_paths_len_ = n_paths;
 }
 
 /**
@@ -173,6 +223,27 @@ char **mk_execv_args(size_t cmd_len, char *parsed_cmd[]) {
 }
 
 /**
+   Given a program name, returns its full path if we can find the program file
+   in the user paths; otherwise, returns NULL.
+
+   The caller of this function is responsible to free the memory allocated to
+   build the full program path.
+*/
+char *find_path_or_error(char *prog_name) {
+    for (size_t i = 0; i < _user_paths_len_; i++) {
+        char *full_path = concat_path_prog(_user_paths_[i], prog_name);
+        int found = access(full_path, X_OK);
+        if (found != 0)
+            free(full_path);
+        else
+            return full_path;
+    }
+    // If the function didn't return a path in the loop, we can't find the
+    // program in the user paths.
+    return NULL;
+}
+
+/**
    Executes programs in forked processes.
 */
 void exec_path_commands(size_t cmd_len, char *parsed_cmd[]) {
@@ -181,9 +252,15 @@ void exec_path_commands(size_t cmd_len, char *parsed_cmd[]) {
         print_error();
     // If this condition is true, it is the child process running.
     else if (pid == 0) {
+        char *path = find_path_or_error(parsed_cmd[0]);
+        // If we can't find a path containing the command-line program, it is
+        // an error.
+        if (path == NULL) {
+            print_error();
+            exit(EXIT_FAILURE);
+        }
         char **exec_args = mk_execv_args(cmd_len, parsed_cmd);
         execvp(exec_args[0], exec_args);
-        exit(EXIT_SUCCESS);
     } else {
         // Parent code running.
         // We wait for the forked process to finish.
@@ -214,7 +291,7 @@ void enter_interactive_mode() {
         else {
             // "parse_cmd" allocates new memory and uses "parsed_cmd" to point
             // to it.
-            free_parsed_cmd(cmd_len, &parsed_cmd);
+            free_array_of_string(cmd_len, &parsed_cmd);
             cmd_len = parse_cmd(cmd_input, &parsed_cmd);
             // This usually happens when the input is empty.
             if (cmd_len == 0) {
@@ -228,13 +305,15 @@ void enter_interactive_mode() {
         }
     }
     free(cmd_input);
-    free_parsed_cmd(cmd_len, &parsed_cmd);
+    free_array_of_string(cmd_len, &parsed_cmd);
 }
 
 int main(int argc, char *argv[argc + 1]) {
-    // We initialize the user path with default values.
+    // We initialize the user path with default values. This should give the
+    // user the hability of calling basic programs like "ls".
     init_user_path();
     if (is_batch_mode(argc)) {
+        // TODO
         printf("batch mode: %s", argv[1]);
     } else if (is_interactive_mode(argc)) {
         enter_interactive_mode();
