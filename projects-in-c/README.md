@@ -9,6 +9,12 @@ This folder contains all the implementations of the OSTEP projects in C.
 
 A very simple Unix shell.
 
+```bash
+wish> echo "hello world"
+"hello world"
+wish>
+```
+
 [Exercise page](https://github.com/remzi-arpacidusseau/ostep-projects/tree/master/processes-shell)
 
 ### Usage

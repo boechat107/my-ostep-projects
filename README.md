@@ -9,7 +9,7 @@ My implementation of [OSTEP projects](https://github.com/remzi-arpacidusseau/ost
   * [X] `wgrep` (C and Rust)
   * [X] `wzip` and `wunzip` (C and Rust)
 
-* [ ] processes shell - `wish`
+* [ ] [processes shell](./projects-in-c/) - `wish`
   * [ ] C (in progress)
   * [ ] Rust
 
