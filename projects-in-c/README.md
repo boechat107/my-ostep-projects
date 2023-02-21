@@ -11,6 +11,18 @@ A very simple Unix shell.
 
 [Exercise page](https://github.com/remzi-arpacidusseau/ostep-projects/tree/master/processes-shell)
 
+### Usage
+
+``` shell
+make
+# Interactive mode
+./build/wish
+# Process a script
+./build/wish examples/wish_script.txt
+# Debugging with valgrind
+make valgrind args='./build/wish examples/wish_script.txt'
+```
+
 ### Todo
 
 * [x] built-in commands
@@ -24,7 +36,7 @@ A very simple Unix shell.
 
 * [x] execute forked processes using the user paths
 
-* [ ] read script files
+* [x] read script files
 
 * [ ] redirection
 

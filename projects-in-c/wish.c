@@ -3,8 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 // TODO: increase this number after testing.
 // This constant defines the amount of memory (number of positions in the array
@@ -92,10 +92,13 @@ size_t parse_cmd(char *cmd_input, char **parsed_cmd[]) {
     char *str_input, *token = NULL;
     size_t i = 0;
     size_t parsed_cmd_size = 0;
-    *parsed_cmd = malloc(sizeof(char*) * EXEC_ARG_STEP_SIZE);
+    // "strtok" mutates its argument; we use a copy to avoid unexpected
+    // side-effects.
+    char *cmd_input_copy = my_strdup(cmd_input);
+    *parsed_cmd = malloc(sizeof(char *) * EXEC_ARG_STEP_SIZE);
     parsed_cmd_size = EXEC_ARG_STEP_SIZE;
     // I use "strtok" because "strsep" is not available for c99.
-    for (i = 0, str_input = cmd_input;; i++, str_input = NULL) {
+    for (i = 0, str_input = cmd_input_copy;; i++, str_input = NULL) {
         token = strtok(str_input, " \n");
         // If "token" is "NULL", we don't have anything else to parse from the
         // command-line string.
@@ -105,18 +108,19 @@ size_t parse_cmd(char *cmd_input, char **parsed_cmd[]) {
         // parsing. We may need to increase the size of the tokens array.
         if (i >= parsed_cmd_size) {
             parsed_cmd_size += EXEC_ARG_STEP_SIZE;
-            *parsed_cmd = realloc(*parsed_cmd,
-                                 sizeof(char*) * parsed_cmd_size);
+            *parsed_cmd =
+                realloc(*parsed_cmd, sizeof(char *) * parsed_cmd_size);
         }
         (*parsed_cmd)[i] = my_strdup(token);
     }
+    free(cmd_input_copy);
     return i;
 }
 
 /**
    Helper function to free the memory allocated for an array strings.
 */
-void free_array_of_string(size_t len, char **str_array[]){
+void free_array_of_string(size_t len, char **str_array[]) {
     // The number of tokens is not the same as the size of the array.
     if (*str_array != NULL) {
         for (size_t i = 0; i < len; i++)
@@ -128,9 +132,7 @@ void free_array_of_string(size_t len, char **str_array[]){
 /**
    Returns true if both strings are the same.
 */
-_Bool equal_str(const char *s1, const char *s2) {
-    return strcmp(s1, s2) == 0;
-}
+_Bool equal_str(const char *s1, const char *s2) { return strcmp(s1, s2) == 0; }
 
 /**
    Sets the user paths the shell uses to execute programs.
@@ -152,7 +154,7 @@ void set_user_paths(size_t n_paths, char *paths[]) {
     } else {
         _user_paths_len_ = n_paths;
         // We copy the given paths to a new freshly allocated memory.
-        _user_paths_ = malloc(sizeof(char*) * n_paths);
+        _user_paths_ = malloc(sizeof(char *) * n_paths);
         for (size_t i = 0; i < n_paths; i++) {
             _user_paths_[i] = my_strdup(paths[i]);
         }
@@ -205,7 +207,7 @@ _Bool exec_builtin_cmds_or_ignore(size_t cmd_len, char *parsed_cmd[]) {
    Initialize the user paths with default values ("/bin" only).
 */
 void init_user_path() {
-    char *default_path[1] = { DEFAULT_USER_PATH };
+    char *default_path[1] = {DEFAULT_USER_PATH};
     set_user_paths(1, default_path);
 }
 
@@ -215,7 +217,7 @@ void init_user_path() {
    This is the format expected for the execv family.
 */
 char **mk_execv_args(size_t cmd_len, char *parsed_cmd[]) {
-    char **args = malloc(sizeof(char*) * (cmd_len + 1));
+    char **args = malloc(sizeof(char *) * (cmd_len + 1));
     for (size_t i = 0; i < cmd_len; i++)
         args[i] = parsed_cmd[i];
     args[cmd_len] = NULL;
@@ -247,18 +249,18 @@ char *find_path_or_error(char *prog_name) {
    Executes programs in forked processes.
 */
 void exec_path_commands(size_t cmd_len, char *parsed_cmd[]) {
+    char *path = find_path_or_error(parsed_cmd[0]);
+    // If we can't find a path containing the command-line program, it is
+    // an error.
+    if (path == NULL) {
+        print_error();
+        return;
+    }
     int pid = fork();
     if (pid < 0)
         print_error();
     // If this condition is true, it is the child process running.
     else if (pid == 0) {
-        char *path = find_path_or_error(parsed_cmd[0]);
-        // If we can't find a path containing the command-line program, it is
-        // an error.
-        if (path == NULL) {
-            print_error();
-            exit(EXIT_FAILURE);
-        }
         char **exec_args = mk_execv_args(cmd_len, parsed_cmd);
         execvp(exec_args[0], exec_args);
     } else {
@@ -266,9 +268,12 @@ void exec_path_commands(size_t cmd_len, char *parsed_cmd[]) {
         // We wait for the forked process to finish.
         waitpid(pid, NULL, 0);
     }
+    // Only the parent process should reach this point. Or we got an error to
+    // fork a process, or it succeeded.
+    free(path);
 }
 
-void enter_interactive_mode() {
+void loop_for_commands(FILE *stream, _Bool is_batch) {
     // We use it to store the inputted command-line string.
     char *cmd_input = NULL;
     // This pointer will point to an array of strings, which one representing a
@@ -281,8 +286,9 @@ void enter_interactive_mode() {
     // This variable will be true if the input is a built-in command.
     _Bool is_built_cmd = false;
     while (true) {
-        printf("wish> ");
-        input_size = my_getline(&cmd_input, stdin);
+        if (!is_batch)
+            printf("wish> ");
+        input_size = my_getline(&cmd_input, stream);
         // -1 means an error or EOF. We stop the shell in these situations.
         if (input_size == -1)
             break;
@@ -313,10 +319,15 @@ int main(int argc, char *argv[argc + 1]) {
     // user the hability of calling basic programs like "ls".
     init_user_path();
     if (is_batch_mode(argc)) {
-        // TODO
-        printf("batch mode: %s", argv[1]);
+        FILE *fp = fopen(argv[argc - 1], "r");
+        if (fp == NULL) {
+            print_error();
+            exit(EXIT_FAILURE);
+        }
+        loop_for_commands(fp, true);
+        fclose(fp);
     } else if (is_interactive_mode(argc)) {
-        enter_interactive_mode();
+        loop_for_commands(stdin, false);
     } else {
         print_error();
         exit(EXIT_FAILURE);

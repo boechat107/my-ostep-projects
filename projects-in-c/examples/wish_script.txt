@@ -1,0 +1,18 @@
+ls
+echo "123"
+
+echo "first ls"
+ls
+path /usr/bin
+cd ..
+
+echo "second ls"
+ls
+
+path
+pwd
+
+path /usr/bin
+cd projects-in-c
+date +%N
+pwd
